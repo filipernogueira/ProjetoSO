@@ -174,8 +174,9 @@ ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
     if (to_read > 0) {
         void *block;
         int read_size = BLOCK_SIZE;
+        int num_blocks = to_read/BLOCK_SIZE, i = 0;
         while(i < num_blocks){
-            block = data_block_get(inode->i_data_block[i]);
+            block = data_block_get(inode->i_data_block[i++]);
             if (block == NULL) {
                 return -1;
             }
@@ -195,7 +196,7 @@ ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
     return (ssize_t)to_read;
 }
 
-void n_data_block_alloc(inode_t i_node, int num_blocks){
+void n_data_block_alloc(inode_t *i_node, int num_blocks){
     int i = 0, i_block, counter = 10;
     while(i < num_blocks && counter > 0){
         i_block = data_block_alloc();
