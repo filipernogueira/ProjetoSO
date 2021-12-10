@@ -11,6 +11,10 @@ enum {
     TFS_O_APPEND = 0b100,
 };
 
+void n_data_block_alloc_direct(inode_t *i_node, int num_blocks);
+
+int *n_data_block_alloc_indirect(inode_t *inode, int num_blocks);
+
 /*
  * Initializes tecnicofs
  * Returns 0 if successful, -1 otherwise.
