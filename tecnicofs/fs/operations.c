@@ -50,7 +50,6 @@ int tfs_open(char const *name, int flags) {
     if (inum >= 0) {
         /* The file already exists */
         inode_t *inode = inode_get(inum);
-        int i = 0;
 
         if (inode == NULL) {
             return -1;
