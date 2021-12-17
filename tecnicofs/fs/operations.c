@@ -131,7 +131,7 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
         }
 
         void *block;
-        int write_size = BLOCK_SIZE;
+        size_t write_size = BLOCK_SIZE;
         while(i < num_blocks){
             block = data_block_get(inode->i_data_block[i++]);
             if (block == NULL) {
@@ -140,7 +140,7 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
 
             /* Perform the actual write */
             if(to_write < BLOCK_SIZE){
-                write_size = (int)to_write;
+                write_size = to_write;
             }
             memcpy(block + file->of_offset, buffer, write_size);
             to_write -= BLOCK_SIZE;
@@ -182,7 +182,7 @@ ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
 
     if (to_read > 0) {
         void *block;
-        int read_size = BLOCK_SIZE;
+        size_t read_size = BLOCK_SIZE;
         int num_blocks = (int)(to_read/BLOCK_SIZE), i = 0;
         while(i < num_blocks){
             block = data_block_get(inode->i_data_block[i++]);
@@ -192,7 +192,7 @@ ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
 
             /* Perform the actual read */
             if(to_read < BLOCK_SIZE){
-                read_size = (int)to_read;
+                read_size = to_read;
             }
             memcpy(buffer, block + file->of_offset, read_size);
 
@@ -207,12 +207,12 @@ ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
     return (ssize_t)to_read;
 }
 
-void n_data_block_alloc_direct(inode_t *i_node, int num_blocks){
+void *n_data_block_alloc_direct(inode_t *i_node, int num_blocks){
     int i = 0, i_block;
     while(i < num_blocks){
         i_block = data_block_alloc();
         if(i_block == -1){
-            return -1;
+            return NULL;
         }
         i_node->i_data_block[i++] = i_block;
     }
