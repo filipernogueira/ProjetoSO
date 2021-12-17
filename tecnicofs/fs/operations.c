@@ -50,6 +50,8 @@ int tfs_open(char const *name, int flags) {
     if (inum >= 0) {
         /* The file already exists */
         inode_t *inode = inode_get(inum);
+        int i = 0;
+
         if (inode == NULL) {
             return -1;
         }
@@ -57,9 +59,10 @@ int tfs_open(char const *name, int flags) {
         /* Trucate (if requested) */
         if (flags & TFS_O_TRUNC) {
             if (inode->i_size > 0) {
-                if (data_block_free(inode->i_data_block) == -1) {
-                    return -1;
-                }
+                while(i <= NUM_BLOCKS)
+                    if (data_block_free(inode->i_data_block[i++]) == -1) {
+                        return -1;
+                    }
                 inode->i_size = 0;
             }
         }
@@ -216,6 +219,7 @@ void *n_data_block_alloc_direct(inode_t *i_node, int num_blocks){
         }
         i_node->i_data_block[i++] = i_block;
     }
+    return 0;
 }
 
 int *n_data_block_alloc_indirect(inode_t *inode, int num_blocks){
