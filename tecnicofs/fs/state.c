@@ -156,9 +156,6 @@ int inode_delete(int inumber) {
         }
     }
 
-    /* TODO: handle non-empty directories (either return error, or recursively
-     * delete children */
-
     return 0;
 }
 

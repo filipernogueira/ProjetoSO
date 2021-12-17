@@ -59,10 +59,11 @@ int tfs_open(char const *name, int flags) {
         /* Trucate (if requested) */
         if (flags & TFS_O_TRUNC) {
             if (inode->i_size > 0) {
-                while(i <= NUM_BLOCKS)
-                    if (data_block_free(inode->i_data_block[i++]) == -1) {
+                for (int i = 0; i < NUM_BLOCKS + 1; i++) {
+                    if (data_block_free(inode->i_data_block[i]) == -1) {
                         return -1;
                     }
+                }
                 inode->i_size = 0;
             }
         }
@@ -128,8 +129,8 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
             }
             else{
                 int indirect_blocks[num_blocks - 10];
-                memcpy(indirect_blocks, n_data_block_alloc_indirect(inode, num_blocks), sizeof(indirect_blocks));
-                memcpy(data_block_get(inode->i_data_block[11]), indirect_blocks, sizeof(indirect_blocks));
+                memcpy(indirect_blocks, n_data_block_alloc_indirect(inode, num_blocks, indirect_blocks), sizeof(indirect_blocks));
+                memcpy(data_block_get(inode->i_data_block[10]), indirect_blocks, sizeof(indirect_blocks));
             }
         }
 
@@ -222,13 +223,17 @@ void *n_data_block_alloc_direct(inode_t *i_node, int num_blocks){
     return 0;
 }
 
-int *n_data_block_alloc_indirect(inode_t *inode, int num_blocks){
+int *n_data_block_alloc_indirect(inode_t *inode, int num_blocks, int array_blocks[]){
     int blocks_left = num_blocks - 10, i = 0;
-    int array_blocks[blocks_left];
     n_data_block_alloc_direct(inode, num_blocks);
-    inode->i_data_block[11] = data_block_alloc();
+    inode->i_data_block[10] = data_block_alloc();
     while(i < blocks_left){
         array_blocks[i++] = data_block_alloc();
     }
     return array_blocks;
 }
+/*
+Passar o "array_blocks" como argumento em vez de o declarar dentro da função,
+pois ao fazer tal coisa o conteudo do array é perdido. Já n vai retornar o array, se retornar
+alguma coisa será 0 e -1.
+*/
