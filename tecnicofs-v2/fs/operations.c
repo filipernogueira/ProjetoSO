@@ -114,83 +114,38 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
         return -1;
     }
 
-    /* Determine how many bytes to write */
-    if (to_write + file->of_offset > BLOCK_SIZE) {
-        to_write = BLOCK_SIZE - file->of_offset;
-    }
 
     if (to_write > 0) {
         int blocks_to_write = (int)(to_write/BLOCK_SIZE);
         if (to_write % BLOCK_SIZE != 0) {
             blocks_to_write++;
         }
-        if (inode->i_size == 0) {
-            /* If empty file, allocate new block */
-            for (int i = 0; i < blocks_to_write && i < 10; i++) {
+
+        for (int i = 0; i < blocks_to_write && inode->i_size < BLOCKS * BLOCK_SIZE; i++) {
+            if (inode->i_data_block[i] == -1)
                 inode->i_data_block[i] = data_block_alloc();
-                size_t write_size = BLOCK_SIZE;
-                void *block = data_block_get(inode->i_data_block[i]);
-                if (block == NULL) {
-                    return -1;
-                }
-
-                if(to_write < BLOCK_SIZE) {
-                    write_size = to_write;
-                }
-                /* Perform the actual write */
-                memcpy(block + file->of_offset, buffer, write_size);
-
-                /* The offset associated with the file handle is
-                * incremented accordingly */
-                to_write -= write_size;
-                file->of_offset += write_size;
-                res += write_size;
+            
+            size_t write_size = BLOCK_SIZE;
+            void *block = data_block_get(inode->i_data_block[i]);
+            if (block == NULL) {
+                return -1;
             }
 
-            if (file->of_offset > inode->i_size) {
-                inode->i_size = file->of_offset;
+            if (to_write < BLOCK_SIZE) {
+                write_size = to_write;
             }
+            /* Perform the actual write */
+            memcpy(block + file->of_offset, buffer, write_size);
+
+            /* The offset associated with the file handle is
+            * incremented accordingly */
+            to_write -= write_size;
+            file->of_offset += write_size;
+            res += write_size;
         }
-
-
-
-
-        // ADICIONEI ESTE BLOCO
-        else {
-            for (int i = 0; i < blocks_to_write && i < 10; i++) {
-                if (inode->i_data_block[i] == -1)
-                    inode->i_data_block[i] = data_block_alloc();
-                
-                size_t write_size = BLOCK_SIZE;
-                void *block = data_block_get(inode->i_data_block[i]);
-                if (block == NULL) {
-                    return -1;
-                }
-
-                if(to_write < BLOCK_SIZE) {
-                    write_size = to_write;
-                }
-                /* Perform the actual write */
-                memcpy(block + file->of_offset, buffer, write_size);
-
-                /* The offset associated with the file handle is
-                * incremented accordingly */
-                to_write -= write_size;
-                file->of_offset += write_size;
-                res += write_size;
-            }
-            if (file->of_offset > inode->i_size) {
-                inode->i_size = file->of_offset;
-            }
+        if (file->of_offset > inode->i_size) {
+            inode->i_size = file->of_offset;
         }
-
-
-
-
-
-
-
-
 
     }
 
