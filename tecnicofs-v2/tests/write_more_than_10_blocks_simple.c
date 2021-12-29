@@ -2,8 +2,8 @@
 #include <assert.h>
 #include <string.h>
 
-#define COUNT 80
-#define SIZE 256
+#define COUNT 20
+#define SIZE 1024
 
 /**
    This test fills in a new file up to 20 blocks via multiple writes

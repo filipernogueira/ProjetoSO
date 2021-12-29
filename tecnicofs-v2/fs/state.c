@@ -125,7 +125,7 @@ int inode_create(inode_type n_type) {
             } else {
                 /* In case of a new file, simply sets its size to 0 */
                 inode_table[inumber].i_size = 0;
-                for(int i = 0; i < BLOCKS; i++)
+                for(int i = 0; i < BLOCKS + 1; i++)
                     inode_table[inumber].i_data_block[i] = -1;
             }
             return inumber;
