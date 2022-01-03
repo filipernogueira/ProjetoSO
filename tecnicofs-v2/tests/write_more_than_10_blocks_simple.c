@@ -1,6 +1,10 @@
 #include "../fs/operations.h"
 #include <assert.h>
 #include <string.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <pthread.h>
+#include <stdlib.h>
 
 #define COUNT 20
 #define SIZE 1024
@@ -12,11 +16,18 @@
    each write always targeting only 1 block of the file, 
    then checks if the file contents are as expected
  */
-
+struct arg_struct {
+    int arg1;
+    char arg2[SIZE];
+    int arg3;
+};
 
 int main() {
 
     char *path = "/f1";
+    pthread_t tid[4];
+    int j = 0;
+    struct arg_struct *args;
 
     /* Writing this buffer multiple times to a file stored on 1KB blocks will 
        always hit a single block (since 1KB is a multiple of SIZE=256) */
@@ -30,9 +41,17 @@ int main() {
     /* Write input COUNT times into a new file */
     int fd = tfs_open(path, TFS_O_CREAT);
     assert(fd != -1);
+
+    args->arg1 = fd;
+    strcpy(args->arg2, input);
+    args->arg3 = SIZE;
+
     for (int i = 0; i < COUNT; i++) {
-        assert(tfs_write(fd, input, SIZE) == SIZE);
+        if(pthread_create(&tid[j++], NULL, tfs_write, (void *)&args) != 0){
+            exit(EXIT_FAILURE);
+        }
     }
+
     assert(tfs_close(fd) != -1);
 
     /* Open again to check if contents are as expected */
