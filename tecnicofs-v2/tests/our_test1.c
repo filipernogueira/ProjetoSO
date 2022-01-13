@@ -14,12 +14,11 @@ typedef struct {
 
 int main() {
 
-    //char *path = "/f1";
     pthread_t tid[20];
 
     tfs_open_paramts input[20];
 
-    /*input[0].pth = path;
+    input[0].pth = "/f1";
     input[0].flg = TFS_O_CREAT;
     input[1].pth = "/f2";
     input[1].flg = TFS_O_CREAT;
@@ -58,31 +57,20 @@ int main() {
     input[18].pth = "/f19";
     input[18].flg = TFS_O_CREAT;
     input[19].pth = "/f20";
-    input[19].flg = TFS_O_CREAT;*/
-    //int open_return_values[5];
-    for (int i = 0; i < 20; i++) {
-        input[i].pth = "/f" + i;
-        printf("%s", &input[i].pth);
-        input[i].flg = TFS_O_CREAT;
-    }
+    input[19].flg = TFS_O_CREAT;
+
     
     assert(tfs_init() != -1);
     
     for (int i =0; i <20; i++) {
-        pthread_create(&tid[i], NULL, (void*)tfs_open, (void *)&input[i]);
+        pthread_create(&tid[i], NULL, (void*)tfs_open, (void *)&input[i]); // FAZER UM IF != 0
     }
+
     for (int i =0; i <20; i++) {
         pthread_join(tid[i], NULL);    
     }
-    
-    //print_dir(20);
 
     assert(tfs_destroy() != -1);
-    /*
-    for(int i; i < 5; i ++) {
-        tfs_close(open_return_values[i]);
-    }*/
-    //assert(tfs_close(fd) != -1);
 
     return 0;
 }

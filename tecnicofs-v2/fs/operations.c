@@ -1,10 +1,10 @@
 #include "operations.h"
-#include "state.c"
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
+#include <unistd.h>
 
 int tfs_init() {
     state_init();
@@ -48,7 +48,7 @@ int tfs_open(char const *name, int flags) {
         return -1;
     }
 
-    pthread_rwlock_wrlock(&(lock_table[ROOT_DIR_INUM]));
+    inode_wrlock_lock(ROOT_DIR_INUM);
 
     inum = tfs_lookup(name);
     if (inum >= 0) {
@@ -92,7 +92,7 @@ int tfs_open(char const *name, int flags) {
         return -1;
     }
 
-    pthread_rwlock_unlock(&(lock_table[ROOT_DIR_INUM]));
+    inode_wrlock_unlock(ROOT_DIR_INUM);
 
     /* Finally, add entry to the open file table and
      * return the corresponding handle */
@@ -119,7 +119,8 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
     if (inode == NULL) {
         return -1;
     }
-    pthread_rwlock_wrlock(&(lock_table[file->of_inumber]));
+
+    inode_wrlock_lock(file->of_inumber);
 
     if (to_write > 0) {
         int full_blocks = (int)inode->i_size / BLOCK_SIZE;
@@ -197,7 +198,7 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
         }
     }
     pthread_mutex_unlock(&(file->mutex));
-    pthread_rwlock_unlock(&(lock_table[file->of_inumber]));
+    inode_wrlock_unlock(file->of_inumber);
 
     return (ssize_t)written_bytes;
 }
@@ -216,7 +217,7 @@ ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
     if (inode == NULL) {
         return -1;
     }
-    pthread_rwlock_rdlock(&(lock_table[file->of_inumber]));
+    inode_rdlock_lock(file->of_inumber);
 
     /* Determine how many bytes to read */
     size_t to_read = inode->i_size - file->of_offset;
@@ -270,7 +271,7 @@ ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
         }
     }
     pthread_mutex_unlock(&(file->mutex));
-    pthread_rwlock_unlock(&(lock_table[file->of_inumber]));
+    inode_rdlock_unlock(file->of_inumber);
 
     return (ssize_t)read_bytes;
 }

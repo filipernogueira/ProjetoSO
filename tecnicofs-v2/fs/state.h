@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <pthread.h>
+#include <unistd.h>
 
 /*
  * Directory entry
@@ -59,5 +60,10 @@ void *data_block_get(int block_number);
 int add_to_open_file_table(int inumber, size_t offset);
 int remove_from_open_file_table(int fhandle);
 open_file_entry_t *get_open_file_entry(int fhandle);
+
+void inode_wrlock_lock(int index);
+void inode_wrlock_unlock(int index);
+void inode_rdlock_lock(int index);
+void inode_rdlock_unlock(int index);
 
 #endif // STATE_H
