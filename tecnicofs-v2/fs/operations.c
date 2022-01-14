@@ -48,6 +48,8 @@ int tfs_open(char const *name, int flags) {
         return -1;
     }
 
+    inode_wrlock_lock(ROOT_DIR_INUM);
+
     inum = tfs_lookup(name);
     if (inum >= 0) {
         /* The file already exists */
@@ -90,6 +92,8 @@ int tfs_open(char const *name, int flags) {
         return -1;
     }
 
+    inode_wrlock_unlock(ROOT_DIR_INUM);
+
     /* Finally, add entry to the open file table and
      * return the corresponding handle */
     return add_to_open_file_table(inum, offset);
@@ -114,12 +118,15 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
     if (file == NULL) {
         return -1;
     }
+    pthread_mutex_lock(&(file->mutex));
 
     /* From the open file table entry, we get the inode */
     inode_t *inode = inode_get(file->of_inumber);
     if (inode == NULL) {
         return -1;
     }
+
+    inode_wrlock_lock(file->of_inumber);
 
     if (to_write > 0) {
         pthread_rwlock_rdlock(&rwl);
@@ -205,8 +212,8 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
         }
         pthread_mutex_unlock(&mutex);
     }
-    pthread_rwlock_destroy(&rwl);
-    pthread_mutex_destroy(&mutex);
+    pthread_mutex_unlock(&(file->mutex));
+    inode_wrlock_unlock(file->of_inumber);
 
     return (ssize_t)written_bytes;
 }
@@ -222,12 +229,14 @@ ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
     if (file == NULL) {
         return -1;
     }
+    pthread_mutex_lock(&(file->mutex));
 
     /* From the open file table entry, we get the inode */
     inode_t *inode = inode_get(file->of_inumber);
     if (inode == NULL) {
         return -1;
     }
+    inode_rdlock_lock(file->of_inumber);
 
     /* Determine how many bytes to read */
     pthread_rwlock_rdlock(&rwl);
@@ -288,8 +297,8 @@ ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
             }
         }
     }
-    pthread_rwlock_destroy(&rwl);
-    pthread_mutex_destroy(&mutex);
+    pthread_mutex_unlock(&(file->mutex));
+    inode_rdlock_unlock(file->of_inumber);
 
     return (ssize_t)read_bytes;
 }

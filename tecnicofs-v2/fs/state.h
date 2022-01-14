@@ -6,6 +6,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
+#include <pthread.h>
+#include <unistd.h>
 
 
 /*
@@ -24,7 +26,7 @@ typedef enum { T_FILE, T_DIRECTORY } inode_type;
 typedef struct {
     inode_type i_node_type;
     size_t i_size;
-    int i_data_block[BLOCKS + 1];
+    int i_data_block[BLOCKS];
     /* in a real FS, more fields would exist here */
 } inode_t;
 
@@ -36,6 +38,7 @@ typedef enum { FREE = 0, TAKEN = 1 } allocation_state_t;
 typedef struct {
     int of_inumber;
     size_t of_offset;
+    pthread_mutex_t mutex;
 } open_file_entry_t;
 
 #define MAX_DIR_ENTRIES (BLOCK_SIZE / sizeof(dir_entry_t))
@@ -58,5 +61,10 @@ void *data_block_get(int block_number);
 int add_to_open_file_table(int inumber, size_t offset);
 int remove_from_open_file_table(int fhandle);
 open_file_entry_t *get_open_file_entry(int fhandle);
+
+void inode_wrlock_lock(int index);
+void inode_wrlock_unlock(int index);
+void inode_rdlock_lock(int index);
+void inode_rdlock_unlock(int index);
 
 #endif // STATE_H
