@@ -9,13 +9,13 @@
 
 typedef struct {
     int fhandle;
-    void const *buffer;
+    void *buffer;
     size_t len;
 } tfs_read_paramts;
 
 void *tfs_read_api(void* arg){
     tfs_read_paramts *paramts = (tfs_read_paramts *)arg;
-    assert(tfs_write(paramts->fhandle, paramts->buffer, paramts->len) == paramts->len);
+    assert(tfs_read(paramts->fhandle, paramts->buffer, paramts->len) == paramts->len);
 
     return NULL;
 }
