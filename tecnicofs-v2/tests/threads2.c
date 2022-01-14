@@ -24,10 +24,10 @@ int main() {
 
     pthread_t tid[THREAD_QUANTITY];
 
-    tfs_write_paramts input[THREAD_QUANTITY];
+    tfs_write_paramts input;
 
     char buffer[LENGTH];
-    memset(input, 'A', LENGTH);
+    memset(buffer, 'A', LENGTH);
 
     char output[LENGTH];
 
@@ -36,15 +36,13 @@ int main() {
 
     int fhandle = tfs_open("/f1", TFS_O_CREAT);
 
-    for (int i = 0; i < THREAD_QUANTITY; i++) {
-        input[i].fhandle = fhandle;
-        input[i].buffer = buffer;
-        input[i].len = LENGTH;
-    }
+    input.fhandle = fhandle;
+    input.buffer = buffer;
+    input.len = LENGTH;
 
     
     for (int i =0; i < THREAD_QUANTITY; i++) {
-        if (pthread_create(&tid[i], NULL, tfs_write_api, (void*)&input[i]) == 0) {
+        if (pthread_create(&tid[i], NULL, tfs_write_api, (void*)&input) == 0) {
             printf("Thread %d criada com sucesso!\n", i + 1);
         }
         else {
@@ -64,7 +62,7 @@ int main() {
 
     for (int i = 0; i < THREAD_QUANTITY; i++) {
         assert(tfs_read(fhandle, output, LENGTH) == LENGTH);
-        assert (memcmp(input, output, LENGTH) == 0);
+        assert(memcmp(buffer, output, LENGTH) == 0);
     }
 
     assert(tfs_close(fhandle) != -1);

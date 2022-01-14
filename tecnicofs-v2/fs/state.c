@@ -426,18 +426,34 @@ open_file_entry_t *get_open_file_entry(int fhandle) {
     return res;
 }
 
+/* Locks the wrlock
+ * Inputs:
+ * 	- Index for the lock table
+ */
 void inode_wrlock_lock(int index) {
     pthread_rwlock_wrlock(&(lock_table[index]));
 }
 
+/* Unlocks the wrlock
+ * Inputs:
+ * 	- Index for the lock table
+ */
 void inode_wrlock_unlock(int index) {
     pthread_rwlock_unlock(&(lock_table[index]));
 }
 
+/* Locks the rdlock
+ * Inputs:
+ * 	- Index for the lock table
+ */
 void inode_rdlock_lock(int index) {
     pthread_rwlock_rdlock(&(lock_table[index]));
 }
 
+/* Unlocks the rdlock
+ * Inputs:
+ * 	- Index for the lock table
+ */
 void inode_rdlock_unlock(int index) {
     pthread_rwlock_unlock(&(lock_table[index]));
 }
