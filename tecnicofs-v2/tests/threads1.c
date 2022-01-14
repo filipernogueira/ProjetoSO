@@ -7,8 +7,16 @@
 typedef struct {
     char const *path;
     int flag;
-    int rtn_value;  //O que é isto?
+    int fhandle; 
 } tfs_open_paramts;
+
+void *tfs_open_api(void* arg){
+    tfs_open_paramts *paramts = (tfs_open_paramts *)arg;
+    paramts->fhandle = tfs_open(paramts->path, paramts->flag);
+    assert(paramts->fhandle != -1);
+
+    return NULL;
+}
 
 
 int main() {
@@ -42,11 +50,10 @@ int main() {
         input[i].flag = TFS_O_CREAT;
     }
 
-    
     assert(tfs_init() != -1);
     
     for (int i =0; i < THREAD_QUANTITY; i++) {
-        if (pthread_create(&tid[i], NULL, (void*)tfs_open, (void*)&input[i]) == 0) {
+        if (pthread_create(&tid[i], NULL, tfs_open_api, (void*)&input[i]) == 0) {
             printf("Thread %d criada com sucesso!\n", i + 1);
         }
         else {
@@ -56,8 +63,11 @@ int main() {
     }
 
     for (int i = 0; i < THREAD_QUANTITY; i++) {
-        pthread_join(tid[i], NULL);    
+        pthread_join(tid[i], NULL);
+        assert(tfs_close(input[i].fhandle) != -1);
     }
+
+    printf("Sucessful test\n");
 
     assert(tfs_destroy() != -1);
 
