@@ -6,11 +6,14 @@
 #include <string.h>
 
 static pthread_mutex_t single_global_lock;
+pthread_cond_t cond;
 
 int tfs_init() {
     state_init();
 
     if (pthread_mutex_init(&single_global_lock, 0) != 0)
+        return -1;
+    if (pthread_cond_init(&cond, 0) != 0)
         return -1;
 
     /* create root inode */
@@ -27,6 +30,9 @@ int tfs_destroy() {
     if (pthread_mutex_destroy(&single_global_lock) != 0) {
         return -1;
     }
+    if (pthread_cond_destroy(&cond) != 0) {
+        return -1;
+    }
     return 0;
 }
 
@@ -35,8 +41,12 @@ static bool valid_pathname(char const *name) {
 }
 
 int tfs_destroy_after_all_closed() {
-    /* TO DO: implement this */
-    return 0;
+    while (get_number_files_open() != 0) {
+        pthread_cond_wait(&cond, &single_global_lock);
+    }
+    int ret = tfs_destroy();
+
+    return ret;
 }
 
 int _tfs_lookup_unsynchronized(char const *name) {
@@ -103,6 +113,9 @@ static int _tfs_open_unsynchronized(char const *name, int flags) {
         return -1;
     }
 
+    increment_files_open();
+    pthread_cond_signal(&cond);
+
     /* Finally, add entry to the open file table and
      * return the corresponding handle */
     return add_to_open_file_table(inum, offset);
@@ -126,6 +139,7 @@ int tfs_close(int fhandle) {
     if (pthread_mutex_lock(&single_global_lock) != 0)
         return -1;
     int r = remove_from_open_file_table(fhandle);
+    pthread_cond_signal(&cond);
     if (pthread_mutex_unlock(&single_global_lock) != 0)
         return -1;
 
