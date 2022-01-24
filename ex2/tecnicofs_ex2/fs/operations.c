@@ -6,7 +6,7 @@
 #include <string.h>
 
 static pthread_mutex_t single_global_lock;
-pthread_cond_t cond;
+static pthread_cond_t cond;
 
 int tfs_init() {
     state_init();
@@ -41,9 +41,15 @@ static bool valid_pathname(char const *name) {
 }
 
 int tfs_destroy_after_all_closed() {
+    pthread_mutex_lock(&single_global_lock);
+
+    set_fs_state(DESTROYING);
+
     while (get_number_files_open() != 0) {
         pthread_cond_wait(&cond, &single_global_lock);
     }
+    pthread_mutex_unlock(&single_global_lock);
+
     int ret = tfs_destroy();
 
     return ret;
@@ -113,7 +119,7 @@ static int _tfs_open_unsynchronized(char const *name, int flags) {
         return -1;
     }
 
-    increment_files_open();
+    set_files_open(INCREMENT);
     pthread_cond_signal(&cond);
 
     /* Finally, add entry to the open file table and

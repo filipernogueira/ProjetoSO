@@ -22,7 +22,11 @@ static char free_blocks[DATA_BLOCKS];
 static open_file_entry_t open_file_table[MAX_OPEN_FILES];
 static char free_open_file_entries[MAX_OPEN_FILES];
 
-int files_open = 0;
+/* Variable that tracks how many files are open */
+static int files_open;
+
+/* Variable to check if the FS is currently destroying */
+static int destroying;
 
 static inline bool valid_inumber(int inumber) {
     return inumber >= 0 && inumber < INODE_TABLE_SIZE;
@@ -78,6 +82,9 @@ void state_init() {
     for (size_t i = 0; i < MAX_OPEN_FILES; i++) {
         free_open_file_entries[i] = FREE;
     }
+
+    files_open = 0;
+    destroying = NOT_DESTROYING;
 }
 
 void state_destroy() { /* nothing to do */
@@ -326,7 +333,7 @@ int remove_from_open_file_table(int fhandle) {
     }
     free_open_file_entries[fhandle] = FREE;
 
-    decrement_files_open();
+    set_files_open(DECREMENT);
 
     return 0;
 }
@@ -347,10 +354,19 @@ int get_number_files_open() {
     return files_open;
 }
 
-void increment_files_open() {
-    files_open++;
+void set_files_open(action a) {
+    if (a == INCREMENT) {
+        files_open++;
+    }
+    else if (a == DECREMENT) {
+        files_open--;
+    }
 }
 
-void decrement_files_open() {
-    files_open--;
+fs_state get_fs_state() {
+    return destroying;
+}
+
+void set_fs_state(fs_state state) {
+    destroying = state;
 }

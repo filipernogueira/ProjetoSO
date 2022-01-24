@@ -39,6 +39,9 @@ typedef struct {
 
 #define MAX_DIR_ENTRIES (BLOCK_SIZE / sizeof(dir_entry_t))
 
+typedef enum { INCREMENT, DECREMENT } action;
+typedef enum { DESTROYING, NOT_DESTROYING } fs_state;
+
 void state_init();
 void state_destroy();
 
@@ -59,7 +62,9 @@ int remove_from_open_file_table(int fhandle);
 open_file_entry_t *get_open_file_entry(int fhandle);
 
 int get_number_files_open();
-void increment_files_open();
-void decrement_files_open();
+void set_files_open(action a);
+
+fs_state get_fs_state();
+void set_fs_state(fs_state state);
 
 #endif // STATE_H
