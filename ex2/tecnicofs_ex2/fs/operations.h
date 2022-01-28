@@ -6,6 +6,8 @@
 #include "state.h"
 #include <sys/types.h>
 
+#define S 1
+
 /*
  * Initializes tecnicofs
  * Returns 0 if successful, -1 otherwise.

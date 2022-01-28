@@ -1,5 +1,6 @@
 #ifndef CLIENT_API_H
 #define CLIENT_API_H
+#define BUFFER_SIZE 40
 
 #include "common/common.h"
 #include <sys/types.h>
