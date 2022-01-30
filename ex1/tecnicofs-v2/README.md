@@ -1,22 +1,33 @@
-Código base do projeto de Sistemas Operativos
-====================================
+Nota prévia:
 
-LEIC-A/LEIC-T/LETI, DEI/IST/ULisboa 2021-22
----------------------------------------------------------------
+O nosso projeto teve, durante algum tempo, um erro de compilação em
+vários dispositivos e até no sigma sempre que tentávamos compilar com
+as flags do fsanitize. O erro não permitia criar os executáveis dos
+testes e era este:
 
-Consultar o enunciado publicado no site da disciplina
+cc -std=c11 -D_POSIX_C_SOURCE=200809L -fsanitize=thread -Ifs -I.
+-fdiagnostics-color=always -Wall -Werror -Wextra -Wcast-align
+-Wconversion -Wfloat-equal -Wformat=2 -Wnull-dereference -Wshadow
+-Wsign-conversion -Wswitch-default -Wswitch-enum -Wundef
+-Wunreachable-code -Wunused -pthread -Wno-sign-compare -g -O3   -c -o
+tests/test1.o tests/test1.c
+cc -std=c11 -D_POSIX_C_SOURCE=200809L -fsanitize=thread -Ifs -I.
+-fdiagnostics-color=always -Wall -Werror -Wextra -Wcast-align
+-Wconversion -Wfloat-equal -Wformat=2 -Wnull-dereference -Wshadow
+-Wsign-conversion -Wswitch-default -Wswitch-enum -Wundef
+-Wunreachable-code -Wunused -pthread -Wno-sign-compare -g -O3   -c -o
+fs/operations.o fs/operations.c
+cc -std=c11 -D_POSIX_C_SOURCE=200809L -fsanitize=thread -Ifs -I.
+-fdiagnostics-color=always -Wall -Werror -Wextra -Wcast-align
+-Wconversion -Wfloat-equal -Wformat=2 -Wnull-dereference -Wshadow
+-Wsign-conversion -Wswitch-default -Wswitch-enum -Wundef
+-Wunreachable-code -Wunused -pthread -Wno-sign-compare -g -O3   -c -o
+fs/state.o fs/state.c
+cc -pthread -fsanitize=thread  tests/test1.o fs/operations.o
+fs/state.o   -o tests/test1
+/usr/bin/ld: cannot find /usr/lib64/libtsan.so.0.0.0
+collect2: error: ld returned 1 exit status
+make: *** [<interno>: tests/test1] Erro 1
 
-CHANGE LOG:
-============
-
-**Versão 2**
------------------
-
-1. Removido um bloco “if” obsoleto na tfs_read (na v1, linhas 162-165 do operations.c): “if (file->of_offset + to_read >= BLOCK_SIZE) {...}”. Além de desnecessário, a condição continha um bug que poderia fazer com que uma leitura a um bloco cheio não devolvesse o resultado esperado.
-
-2. O ciclo de “insert_delay” na função inode_create (na v1, linha 93 do state.c na v1) foi retificado para passar a ter um número de iterações mais realista.
-O original (v1) era “if ((inumber * (int) sizeof(allocation_state_t)) == 0)”, passou para “if ((inumber * (int) sizeof(allocation_state_t) % BLOCK_SIZE) == 0)”.
-
-3. Removido um comentário obsoleto (na v1, linhas 159-160 do state.c).
-
-
+Por alguma razão conseguimos compilar com as flags recentemente mas
+apenas num dos computadores.
