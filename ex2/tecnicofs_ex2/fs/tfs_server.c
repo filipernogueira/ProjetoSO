@@ -100,6 +100,8 @@ int server_open(){
         return -1;
     }
 
+    free(buffer);
+
     return 0;
 }
 
@@ -171,6 +173,73 @@ int server_write(){
     return 0;
 }
 
+int server_read(){
+    void *buffer = malloc(sizeof(int) * 2 + sizeof(size_t));
+
+    if(read(rx, buffer, sizeof(int) * 2 + sizeof(size_t)) == -1){
+        fprintf(stderr, "[ERR]: read failed: %s\n", strerror(errno));
+        return -1;
+    }
+
+    int session_id, fhandle;
+    size_t len;
+
+    memcpy(&session_id, buffer, sizeof(int));
+    memcpy(&fhandle, buffer + 1, sizeof(int));
+    memcpy(&len, buffer + 2, sizeof(size_t));
+
+    char data[len];
+
+    int num_bytes = tfs_read(fhandle, data, len);
+
+    if(num_bytes == -1){
+        fprintf(stderr, "[ERR]: read failed: %s\n", strerror(errno));
+        return -1;
+    }
+
+    if (write(session_ids[session_id], &num_bytes, sizeof(int)) == -1){
+        fprintf(stderr, "[ERR]: write failed: %s\n", strerror(errno));
+        return -1;
+    }
+
+    if (write(session_ids[session_id], &data, sizeof(char) * len) == -1){
+        fprintf(stderr, "[ERR]: write failed: %s\n", strerror(errno));
+        return -1;
+    }
+
+    free(buffer);
+
+    return 0;
+}
+
+int server_shutdown(){
+    int session_id;
+
+    if(read(rx, &session_id, sizeof(int) * 2) == -1){
+        fprintf(stderr, "[ERR]: read failed: %s\n", strerror(errno));
+        return -1;
+    }
+
+    int ret = tfs_destroy_after_all_closed();
+
+    if(ret == -1){
+        fprintf(stderr, "[ERR]: close failed: %s\n", strerror(errno));
+        return -1;
+    }
+
+    if(write(session_ids[session_id], &ret, sizeof(int)) == -1){
+        fprintf(stderr, "[ERR]: write failed: %s\n", strerror(errno));
+        return -1;
+    }
+
+    if(close(rx) == -1){
+        fprintf(stderr, "[ERR]: close failed: %s\n", strerror(errno));
+        return -1;
+    }
+
+    return 0;
+}
+
 int main(int argc, char **argv) {
     if (argc < 2) {
         printf("Please specify the pathname of the server's pipe.\n");
@@ -231,7 +300,7 @@ int main(int argc, char **argv) {
                 break;
             case TFS_OP_CODE_SHUTDOWN_AFTER_ALL_CLOSED:
                 server_shutdown();
-                break;
+                return 0;
             default:
                 break;
         }
