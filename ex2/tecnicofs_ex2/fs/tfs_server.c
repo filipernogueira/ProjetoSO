@@ -14,6 +14,9 @@ int session_ids[S];
 int static rx;
 int open_sessions = 0;
 
+//É SUPOSTO ASSUMIR QUE O OPCODE SAI DO BUFFER DEPOIS DE LIDO NO MAIN?
+//COMO DEVEMOS TRATAR OS ERROS NO MAIN?
+
 int server_mount(){
     char client_pipe_path[40];
 
@@ -39,6 +42,7 @@ int server_mount(){
         if(session_ids[id] == -1){
             session_ids[id] = tx;
             open_sessions++;
+            break;
         }
     }
 
@@ -66,6 +70,104 @@ int server_unmount(){
     session_ids[id] == -1;
     open_sessions--;
     
+    return 0;
+}
+
+int server_open(){
+    void *buffer = malloc(sizeof(char) * 40 + 2 * sizeof(int));
+
+    if(read(rx, buffer, sizeof(int) * 2 + sizeof(char) * 40) == -1){
+        fprintf(stderr, "[ERR]: read failed: %s\n", strerror(errno));
+        return -1;
+    }
+
+    int session_id, flags;
+    char client_path_name[40];
+
+    memcpy(&session_id, buffer, sizeof(int));
+    memcpy(&client_path_name, buffer + 1, sizeof(char) * 40);
+    memcpy(&flags, buffer + 41, sizeof(int));
+
+    int ret = tfs_open(client_path_name, flags);
+
+    if(ret == -1){
+        fprintf(stderr, "[ERR]: open failed: %s\n", strerror(errno));
+        return -1;
+    }
+
+    if (write(session_ids[session_id], &ret, sizeof(int)) == -1){
+        fprintf(stderr, "[ERR]: write failed: %s\n", strerror(errno));
+        return -1;
+    }
+
+    return 0;
+}
+
+int server_close(){
+    int buffer[2];
+
+    if(read(rx, &buffer, sizeof(int) * 2) == -1){
+        fprintf(stderr, "[ERR]: read failed: %s\n", strerror(errno));
+        return -1;
+    }
+
+    int session_id, fhandle;
+
+    memcpy(&session_id, buffer, sizeof(int));
+    memcpy(&fhandle, buffer + 1, sizeof(int));
+
+    int ret = tfs_close(fhandle);
+
+    if(ret == -1){
+        fprintf(stderr, "[ERR]: close failed: %s\n", strerror(errno));
+        return -1;
+    }
+
+    if (write(session_ids[session_id], &ret, sizeof(int)) == -1){
+        fprintf(stderr, "[ERR]: write failed: %s\n", strerror(errno));
+        return -1;
+    }
+
+    return 0;
+}
+
+int server_write(){
+    size_t len;
+    
+    if(read(rx, &len, sizeof(size_t)) == -1){
+        fprintf(stderr, "[ERR]: read failed: %s\n", strerror(errno));
+        return -1;
+    }
+
+    void *local_buffer = malloc(sizeof(char) * len + 2 * sizeof(int));
+
+    if(read(rx, local_buffer, sizeof(char) * len + 2 * sizeof(int)) == -1){
+        fprintf(stderr, "[ERR]: read failed: %s\n", strerror(errno));
+        return -1;
+    }
+
+    int session_id, fhandle;
+    char buffer[len];
+
+    memcpy(&session_id, local_buffer, sizeof(int));
+    memcpy(&fhandle, local_buffer + 1, sizeof(int));
+    memcpy(&buffer, local_buffer + 2, sizeof(char) * 40);
+    
+
+    int ret = tfs_write(fhandle, buffer, len);
+
+    if(ret == -1){
+        fprintf(stderr, "[ERR]: write failed: %s\n", strerror(errno));
+        return -1;
+    }
+
+    if (write(session_ids[session_id], &ret, sizeof(int)) == -1){
+        fprintf(stderr, "[ERR]: write failed: %s\n", strerror(errno));
+        return -1;
+    }
+
+    free(local_buffer);
+
     return 0;
 }
 
@@ -134,7 +236,6 @@ int main(int argc, char **argv) {
                 break;
         }
     }
-
 
     return 0;
 }

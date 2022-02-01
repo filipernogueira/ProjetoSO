@@ -152,8 +152,7 @@ int tfs_close(int fhandle) {
     return r;
 }
 
-static ssize_t _tfs_write_unsynchronized(int fhandle, void const *buffer,
-                                         size_t to_write) {
+static ssize_t _tfs_write_unsynchronized(int fhandle, void const *buffer, size_t to_write) {
     open_file_entry_t *file = get_open_file_entry(fhandle);
     if (file == NULL) {
         return -1;
