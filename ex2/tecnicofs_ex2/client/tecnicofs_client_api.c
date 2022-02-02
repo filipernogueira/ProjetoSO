@@ -25,7 +25,7 @@ int tfs_mount(char const *client_pipe_path, char const *server_pipe_path) {
     }
 
     char buffer[41];
-    memset(buffer, '\0', 41);
+    memset(buffer, '\0', 41 * sizeof(char));
 
     tx = open(server_pipe_path, O_WRONLY);
     if (tx == -1) {
@@ -35,7 +35,7 @@ int tfs_mount(char const *client_pipe_path, char const *server_pipe_path) {
 
     char const opcode = TFS_OP_CODE_MOUNT;
     memcpy(buffer, &opcode, sizeof(char));
-    memcpy(buffer + 1, client_pipe_path, sizeof(char) * strlen(client_pipe_path));
+    memcpy(buffer + sizeof(char), client_pipe_path, sizeof(char) * strlen(client_pipe_path));
 
     if (write(tx, buffer, 41 * sizeof(char)) == -1){
         fprintf(stderr, "[ERR]: write failed: %s\n", strerror(errno));
@@ -65,7 +65,7 @@ int tfs_unmount() {
     void *buffer = malloc(sizeof(char) + sizeof(int));
 
     memcpy(buffer, &op_code, sizeof(char));
-    memcpy(buffer + 1, &session_id, sizeof(int));
+    memcpy(buffer + sizeof(char), &session_id, sizeof(int));
 
     if(write(tx, buffer, 2 * sizeof(int)) == -1){
         fprintf(stderr, "[ERR]: write failed: %s\n", strerror(errno));
@@ -92,9 +92,9 @@ int tfs_open(char const *name, int flags) {
     void *buffer = malloc(sizeof(char) * 41 + 2 * sizeof(int)); 
 
     memcpy(buffer, &op_code, sizeof(char));
-    memcpy(buffer + 1, &session_id, sizeof(int));
-    memcpy(buffer + 2, name, sizeof(char) * 40);
-    memcpy(buffer + 42, &flags, sizeof(int));
+    memcpy(buffer + sizeof(char), &session_id, sizeof(int));
+    memcpy(buffer + sizeof(char) + sizeof(int), name, sizeof(char) * 40);
+    memcpy(buffer + sizeof(char) * 41 + sizeof(int), &flags, sizeof(int));
 
     if(write(tx, buffer, 2 * sizeof(int) + 41 * sizeof(char)) == -1){
         fprintf(stderr, "[ERR]: write failed: %s\n", strerror(errno));
@@ -118,8 +118,8 @@ int tfs_close(int fhandle) {
     void *buffer = malloc(sizeof(char) + 2 * sizeof(int)); 
 
     memcpy(buffer, &op_code, sizeof(char));
-    memcpy(buffer + 1, &session_id, sizeof(int));
-    memcpy(buffer + 2, &fhandle, sizeof(int));
+    memcpy(buffer + sizeof(char), &session_id, sizeof(int));
+    memcpy(buffer + sizeof(char) + sizeof(int), &fhandle, sizeof(int));
 
     if(write(tx, buffer, 2 * sizeof(int) + sizeof(char)) == -1){
         fprintf(stderr, "[ERR]: write failed: %s\n", strerror(errno));
@@ -143,7 +143,7 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t len) {
     void *initial_buffer = malloc(sizeof(char) + sizeof(size_t));
 
     memcpy(initial_buffer, &op_code, sizeof(char));
-    memcpy(initial_buffer + 1, &len, sizeof(size_t));
+    memcpy(initial_buffer + sizeof(char), &len, sizeof(size_t));
 
     if(write(tx, initial_buffer, sizeof(char) + sizeof(size_t)) == -1){
         fprintf(stderr, "[ERR]: write failed: %s\n", strerror(errno));
@@ -151,9 +151,9 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t len) {
     }
 
     void *local_buffer = malloc(sizeof(char) * len + 2 * sizeof(int)); 
-    memcpy(local_buffer + 1, &session_id, sizeof(int));
-    memcpy(local_buffer + 2, &fhandle, sizeof(int));
-    memcpy(local_buffer + 3, buffer, sizeof(char) * len);
+    memcpy(local_buffer, &session_id, sizeof(int));
+    memcpy(local_buffer + sizeof(int), &fhandle, sizeof(int));
+    memcpy(local_buffer + sizeof(int) * 2, buffer, sizeof(char) * len);
 
     if(write(tx, local_buffer, sizeof(char) * len + 2 * sizeof(int)) == -1){
         fprintf(stderr, "[ERR]: write failed: %s\n", strerror(errno));
@@ -177,9 +177,9 @@ ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
     void *local_buffer = malloc(sizeof(char) + 2 * sizeof(int) + sizeof(size_t)); 
 
     memcpy(local_buffer, &op_code, sizeof(char));
-    memcpy(local_buffer + 1, &session_id, sizeof(int));
-    memcpy(local_buffer + 2, &fhandle, sizeof(int));
-    memcpy(local_buffer + 3, &len, sizeof(size_t));
+    memcpy(local_buffer + sizeof(char), &session_id, sizeof(int));
+    memcpy(local_buffer + sizeof(char) + sizeof(int), &fhandle, sizeof(int));
+    memcpy(local_buffer + sizeof(char) + 2 * sizeof(int), &len, sizeof(size_t));
 
     if(write(tx, local_buffer, sizeof(char) + 2 * sizeof(int) + sizeof(size_t)) == -1){
         fprintf(stderr, "[ERR]: write failed: %s\n", strerror(errno));
@@ -213,7 +213,7 @@ int tfs_shutdown_after_all_closed() {
     void *buffer = malloc(sizeof(int) + sizeof(char)); 
 
     memcpy(buffer, &op_code, sizeof(char));
-    memcpy(buffer + 1, &session_id, sizeof(int));
+    memcpy(buffer + sizeof(char), &session_id, sizeof(int));
 
     if(write(tx, buffer, sizeof(int) + sizeof(char)) == -1){
         fprintf(stderr, "[ERR]: write failed: %s\n", strerror(errno));

@@ -134,9 +134,11 @@ int server_open(){
     int session_id, flags;
     char name[40];
     
+    memset(name, '\0', 40 * sizeof(char));
+
     memcpy(&session_id, buffer, sizeof(int));
-    memcpy(name, buffer + 1, sizeof(char) * 40);
-    memcpy(&flags, buffer + 41, sizeof(int));
+    memcpy(name, buffer + sizeof(int), sizeof(char) * 40);
+    memcpy(&flags, buffer + sizeof(int) + sizeof(char) * 40, sizeof(int));
 
     printf("%i; %i; %s", session_id, flags, name);
 
@@ -169,7 +171,7 @@ int server_close(){
     int session_id, fhandle;
 
     memcpy(&session_id, buffer, sizeof(int));
-    memcpy(&fhandle, buffer + 1, sizeof(int));
+    memcpy(&fhandle, buffer + sizeof(int), sizeof(int));
 
     int ret = tfs_close(fhandle);
 
@@ -205,8 +207,8 @@ int server_write(){
     char buffer[len];
 
     memcpy(&session_id, local_buffer, sizeof(int));
-    memcpy(&fhandle, local_buffer + 1, sizeof(int));
-    memcpy(&buffer, local_buffer + 2, sizeof(char) * 40);
+    memcpy(&fhandle, local_buffer + sizeof(int), sizeof(int));
+    memcpy(&buffer, local_buffer + sizeof(int) * 2, sizeof(char) * 40);
     
 
     ssize_t ret = tfs_write(fhandle, buffer, len);
@@ -238,8 +240,8 @@ int server_read(){
     size_t len;
 
     memcpy(&session_id, buffer, sizeof(int));
-    memcpy(&fhandle, buffer + 1, sizeof(int));
-    memcpy(&len, buffer + 2, sizeof(size_t));
+    memcpy(&fhandle, buffer + sizeof(int), sizeof(int));
+    memcpy(&len, buffer + 2 * sizeof(int), sizeof(size_t));
 
     char data[len];
 
@@ -288,6 +290,15 @@ int server_shutdown(){
     if(close(rx) == -1){
         fprintf(stderr, "[ERR]: close failed: %s\n", strerror(errno));
         return -1;
+    }
+
+    for(int id = 0; id < S; id++){
+        if(session_ids[id] != -1){
+            if(close(session_ids[id]) == -1){
+                fprintf(stderr, "[ERR]: close failed: %s\n", strerror(errno));
+                return -1;
+            }
+        }
     }
 
     return 0;
