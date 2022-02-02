@@ -11,10 +11,55 @@
 #include <unistd.h>
 
 int session_ids[S];
-int static rx;
+static int rx;
 int open_sessions = 0;
 
-//É SUPOSTO ASSUMIR QUE O OPCODE SAI DO BUFFER DEPOIS DE LIDO NO MAIN?
+/*typedef struct{
+
+} request;
+
+void worker_thread(){
+    
+    while()
+    
+    while(true){
+        char op_code;
+        int ret = read(rx, &op_code, sizeof(char));
+
+        if(ret == -1){
+            fprintf(stderr, "[ERR]: read failed: %s\n", strerror(errno));
+            return -1;
+        } else if (ret == 0){
+            continue;
+        }
+        switch(op_code){
+            case TFS_OP_CODE_MOUNT:
+                
+                break;
+            case TFS_OP_CODE_UNMOUNT:
+                
+                break;
+            case TFS_OP_CODE_OPEN:
+                
+                break;
+            case TFS_OP_CODE_CLOSE:
+                
+                break;
+            case TFS_OP_CODE_WRITE:
+                
+                break;
+            case TFS_OP_CODE_READ:
+                
+                break;
+            case TFS_OP_CODE_SHUTDOWN_AFTER_ALL_CLOSED:
+                
+                return 0;
+            default:
+                break;
+        }
+    }
+}*/
+
 //COMO DEVEMOS TRATAR OS ERROS NO MAIN?
 
 int server_mount(){
@@ -31,9 +76,14 @@ int server_mount(){
         return -1;
     }
 
+    printf("passou aqui\n");
+
     if(open_sessions >= S){
         int error = -1;
-        write(tx, &error, sizeof(int));
+        if(write(tx, &error, sizeof(int)) == -1){
+            fprintf(stderr, "[ERR]: read failed: %s\n", strerror(errno));
+            return -1;
+        }
         return -1;
     }
 
@@ -67,7 +117,7 @@ int server_unmount(){
         return -1;
     }
     
-    session_ids[id] == -1;
+    session_ids[id] = -1;
     open_sessions--;
     
     return 0;
@@ -85,7 +135,7 @@ int server_open(){
     char client_path_name[40];
 
     memcpy(&session_id, buffer, sizeof(int));
-    memcpy(&client_path_name, buffer + 1, sizeof(char) * 40);
+    memcpy(client_path_name, buffer + 1, sizeof(char) * 40);
     memcpy(&flags, buffer + 41, sizeof(int));
 
     int ret = tfs_open(client_path_name, flags);
@@ -94,6 +144,7 @@ int server_open(){
         fprintf(stderr, "[ERR]: open failed: %s\n", strerror(errno));
         return -1;
     }
+    printf("passou aqui 2\n");
 
     if (write(session_ids[session_id], &ret, sizeof(int)) == -1){
         fprintf(stderr, "[ERR]: write failed: %s\n", strerror(errno));
@@ -156,14 +207,14 @@ int server_write(){
     memcpy(&buffer, local_buffer + 2, sizeof(char) * 40);
     
 
-    int ret = tfs_write(fhandle, buffer, len);
+    ssize_t ret = tfs_write(fhandle, buffer, len);
 
     if(ret == -1){
         fprintf(stderr, "[ERR]: write failed: %s\n", strerror(errno));
         return -1;
     }
 
-    if (write(session_ids[session_id], &ret, sizeof(int)) == -1){
+    if (write(session_ids[session_id], &ret, sizeof(ssize_t)) == -1){
         fprintf(stderr, "[ERR]: write failed: %s\n", strerror(errno));
         return -1;
     }
@@ -190,14 +241,14 @@ int server_read(){
 
     char data[len];
 
-    int num_bytes = tfs_read(fhandle, data, len);
+    ssize_t num_bytes = tfs_read(fhandle, data, len);
 
     if(num_bytes == -1){
         fprintf(stderr, "[ERR]: read failed: %s\n", strerror(errno));
         return -1;
     }
 
-    if (write(session_ids[session_id], &num_bytes, sizeof(int)) == -1){
+    if (write(session_ids[session_id], &num_bytes, sizeof(ssize_t)) == -1){
         fprintf(stderr, "[ERR]: write failed: %s\n", strerror(errno));
         return -1;
     }
@@ -215,7 +266,7 @@ int server_read(){
 int server_shutdown(){
     int session_id;
 
-    if(read(rx, &session_id, sizeof(int) * 2) == -1){
+    if(read(rx, &session_id, sizeof(int)) == -1){
         fprintf(stderr, "[ERR]: read failed: %s\n", strerror(errno));
         return -1;
     }
@@ -271,7 +322,7 @@ int main(int argc, char **argv) {
 
     while(true){
         char op_code;
-        int ret = read(rx, &op_code, sizeof(char));
+        ssize_t ret = read(rx, &op_code, sizeof(char));
 
         if(ret == -1){
             fprintf(stderr, "[ERR]: read failed: %s\n", strerror(errno));

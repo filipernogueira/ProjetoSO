@@ -23,7 +23,10 @@ int tfs_mount(char const *client_pipe_path, char const *server_pipe_path) {
         fprintf(stderr, "[ERR]: mkfifo failed: %s\n", strerror(errno));
         return -1;
     }
+
     char buffer[41];
+    memset(buffer, '\0', 41);
+
     tx = open(server_pipe_path, O_WRONLY);
     if (tx == -1) {
         fprintf(stderr, "[ERR]: open failed: %s\n", strerror(errno));
@@ -137,7 +140,7 @@ int tfs_close(int fhandle) {
 
 ssize_t tfs_write(int fhandle, void const *buffer, size_t len) {
     char const op_code = TFS_OP_CODE_WRITE;
-    void *initial_buffer = malloc(sizeof(char) * sizeof(int));
+    void *initial_buffer = malloc(sizeof(char) + sizeof(size_t));
 
     memcpy(initial_buffer, &op_code, sizeof(char));
     memcpy(initial_buffer + 1, &len, sizeof(size_t));
@@ -183,9 +186,9 @@ ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
         return -1;
     }
 
-    int num_bytes;
+    size_t num_bytes;
 
-    if(read(rx, &num_bytes, sizeof(int)) == -1){
+    if(read(rx, &num_bytes, sizeof(size_t)) == -1){
         fprintf(stderr, "[ERR]: read failed: %s\n", strerror(errno));
         return -1;
     }
@@ -202,7 +205,7 @@ ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
     free(local_buffer);
     free(ret);
 
-    return num_bytes;
+    return (ssize_t)num_bytes;
 }
 
 int tfs_shutdown_after_all_closed() {
