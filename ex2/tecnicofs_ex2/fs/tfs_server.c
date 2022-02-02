@@ -76,7 +76,7 @@ int server_mount(){
         return -1;
     }
 
-    printf("passou aqui\n");
+    printf("passou aqui!\n");
 
     if(open_sessions >= S){
         int error = -1;
@@ -91,7 +91,7 @@ int server_mount(){
     for(;id < S; id++){
         if(session_ids[id] == -1){
             session_ids[id] = tx;
-            open_sessions++;
+            open_sessions++; 
             break;
         }
     }
@@ -132,13 +132,15 @@ int server_open(){
     }
 
     int session_id, flags;
-    char client_path_name[40];
-
+    char name[40];
+    
     memcpy(&session_id, buffer, sizeof(int));
-    memcpy(client_path_name, buffer + 1, sizeof(char) * 40);
+    memcpy(name, buffer + 1, sizeof(char) * 40);
     memcpy(&flags, buffer + 41, sizeof(int));
 
-    int ret = tfs_open(client_path_name, flags);
+    printf("%i; %i; %s", session_id, flags, name);
+
+    int ret = tfs_open(name, flags);
 
     if(ret == -1){
         fprintf(stderr, "[ERR]: open failed: %s\n", strerror(errno));
@@ -332,25 +334,32 @@ int main(int argc, char **argv) {
         }
         switch(op_code){
             case TFS_OP_CODE_MOUNT:
-                server_mount();
+                if(server_mount() == -1)
+                    return -1;
                 break;
             case TFS_OP_CODE_UNMOUNT:
-                server_unmount();
+                if(server_unmount() == -1)
+                    return -1;
                 break;
             case TFS_OP_CODE_OPEN:
-                server_open();
+                if(server_open() == -1)
+                    return -1;
                 break;
             case TFS_OP_CODE_CLOSE:
-                server_close();
+                if(server_close() == -1)
+                    return -1;
                 break;
             case TFS_OP_CODE_WRITE:
-                server_write();
+                if(server_write() == -1)
+                    return -1;
                 break;
             case TFS_OP_CODE_READ:
-                server_read();
+                if(server_read() == -1)
+                    return -1;
                 break;
             case TFS_OP_CODE_SHUTDOWN_AFTER_ALL_CLOSED:
-                server_shutdown();
+                if(server_shutdown() == -1)
+                    return -1;
                 return 0;
             default:
                 break;

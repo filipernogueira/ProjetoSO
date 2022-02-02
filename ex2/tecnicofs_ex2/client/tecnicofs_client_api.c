@@ -92,8 +92,8 @@ int tfs_open(char const *name, int flags) {
     void *buffer = malloc(sizeof(char) * 41 + 2 * sizeof(int)); 
 
     memcpy(buffer, &op_code, sizeof(char));
-    memcpy(buffer + 1, name, sizeof(char) * 40);
-    memcpy(buffer + 41, &session_id, sizeof(int));
+    memcpy(buffer + 1, &session_id, sizeof(int));
+    memcpy(buffer + 2, name, sizeof(char) * 40);
     memcpy(buffer + 42, &flags, sizeof(int));
 
     if(write(tx, buffer, 2 * sizeof(int) + 41 * sizeof(char)) == -1){
