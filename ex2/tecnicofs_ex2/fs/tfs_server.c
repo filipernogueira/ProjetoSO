@@ -76,8 +76,6 @@ int server_mount(){
         return -1;
     }
 
-    printf("passou aqui!\n");
-
     if(open_sessions >= S){
         int error = -1;
         if(write(tx, &error, sizeof(int)) == -1){
@@ -140,15 +138,12 @@ int server_open(){
     memcpy(name, buffer + sizeof(int), sizeof(char) * 40);
     memcpy(&flags, buffer + sizeof(int) + sizeof(char) * 40, sizeof(int));
 
-    printf("%i; %i; %s", session_id, flags, name);
-
     int ret = tfs_open(name, flags);
 
     if(ret == -1){
         fprintf(stderr, "[ERR]: open failed: %s\n", strerror(errno));
         return -1;
     }
-    printf("passou aqui 2\n");
 
     if (write(session_ids[session_id], &ret, sizeof(int)) == -1){
         fprintf(stderr, "[ERR]: write failed: %s\n", strerror(errno));
@@ -208,7 +203,7 @@ int server_write(){
 
     memcpy(&session_id, local_buffer, sizeof(int));
     memcpy(&fhandle, local_buffer + sizeof(int), sizeof(int));
-    memcpy(&buffer, local_buffer + sizeof(int) * 2, sizeof(char) * 40);
+    memcpy(buffer, local_buffer + sizeof(int) * 2, sizeof(char) * 40);
     
 
     ssize_t ret = tfs_write(fhandle, buffer, len);
@@ -312,6 +307,9 @@ int main(int argc, char **argv) {
 
     char *pipename = argv[1];
     printf("Starting TecnicoFS server with pipe called %s\n", pipename);
+
+    if(tfs_init() == -1)
+        return -1;
 
     if (unlink(pipename) != 0 && errno != ENOENT) {
         fprintf(stderr, "[ERR]: unlink(%s) failed: %s\n", pipename, strerror(errno));
