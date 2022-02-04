@@ -14,53 +14,6 @@ int session_ids[S];
 static int rx;
 int open_sessions = 0;
 
-/*typedef struct{
-
-} request;
-
-void worker_thread(){
-    
-    while()
-    
-    while(true){
-        char op_code;
-        int ret = read(rx, &op_code, sizeof(char));
-
-        if(ret == -1){
-            fprintf(stderr, "[ERR]: read failed: %s\n", strerror(errno));
-            return -1;
-        } else if (ret == 0){
-            continue;
-        }
-        switch(op_code){
-            case TFS_OP_CODE_MOUNT:
-                
-                break;
-            case TFS_OP_CODE_UNMOUNT:
-                
-                break;
-            case TFS_OP_CODE_OPEN:
-                
-                break;
-            case TFS_OP_CODE_CLOSE:
-                
-                break;
-            case TFS_OP_CODE_WRITE:
-                
-                break;
-            case TFS_OP_CODE_READ:
-                
-                break;
-            case TFS_OP_CODE_SHUTDOWN_AFTER_ALL_CLOSED:
-                
-                return 0;
-            default:
-                break;
-        }
-    }
-}*/
-
-//COMO DEVEMOS TRATAR OS ERROS NO MAIN?
 
 int server_mount(){
     char client_pipe_path[40];
@@ -337,7 +290,7 @@ int main(int argc, char **argv) {
             rx = open(pipename, O_RDONLY);
             continue;
         }
-        printf("%i", op_code);
+
         switch(op_code){
             case TFS_OP_CODE_MOUNT:
                 if(server_mount() == -1)

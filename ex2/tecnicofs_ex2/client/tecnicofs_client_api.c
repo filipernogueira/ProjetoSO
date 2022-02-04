@@ -67,7 +67,7 @@ int tfs_unmount() {
     memcpy(buffer, &op_code, sizeof(char));
     memcpy(buffer + sizeof(char), &session_id, sizeof(int));
 
-    if(write(tx, buffer, 2 * sizeof(int)) == -1){
+    if(write(tx, buffer, sizeof(char) + sizeof(int)) == -1){
         fprintf(stderr, "[ERR]: write failed: %s\n", strerror(errno));
         return -1;
     }
