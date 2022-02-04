@@ -140,11 +140,6 @@ int server_open(){
 
     int ret = tfs_open(name, flags);
 
-    if(ret == -1){
-        fprintf(stderr, "[ERR]: open failed: %s\n", strerror(errno));
-        return -1;
-    }
-
     if (write(session_ids[session_id], &ret, sizeof(int)) == -1){
         fprintf(stderr, "[ERR]: write failed: %s\n", strerror(errno));
         return -1;
@@ -169,11 +164,6 @@ int server_close(){
     memcpy(&fhandle, buffer + sizeof(int), sizeof(int));
 
     int ret = tfs_close(fhandle);
-
-    if(ret == -1){
-        fprintf(stderr, "[ERR]: close failed: %s\n", strerror(errno));
-        return -1;
-    }
 
     if (write(session_ids[session_id], &ret, sizeof(int)) == -1){
         fprintf(stderr, "[ERR]: write failed: %s\n", strerror(errno));
@@ -242,19 +232,19 @@ int server_read(){
 
     void *data = malloc(sizeof(char) * len);
 
-    ssize_t num_bytes = tfs_read(fhandle, data, len);
+    int num_bytes = (int)tfs_read(fhandle, data, len);
 
     if(num_bytes == -1){
         fprintf(stderr, "[ERR]: read failed: %s\n", strerror(errno));
         return -1;
     }
 
-    if (write(session_ids[session_id], &num_bytes, sizeof(ssize_t)) == -1){
+    if (write(session_ids[session_id], &num_bytes, sizeof(int)) == -1){
         fprintf(stderr, "[ERR]: write failed: %s\n", strerror(errno));
         return -1;
     }
 
-    if (write(session_ids[session_id], data, sizeof(char) * len) == -1){
+    if (write(session_ids[session_id], data, sizeof(char) * (size_t)num_bytes )== -1){
         fprintf(stderr, "[ERR]: write failed: %s\n", strerror(errno));
         return -1;
     }
@@ -342,8 +332,12 @@ int main(int argc, char **argv) {
             fprintf(stderr, "[ERR]: read failed: %s\n", strerror(errno));
             return -1;
         } else if (ret == 0){
+            if(close(rx) == -1)
+                return -1;
+            rx = open(pipename, O_RDONLY);
             continue;
         }
+        printf("%i", op_code);
         switch(op_code){
             case TFS_OP_CODE_MOUNT:
                 if(server_mount() == -1)
