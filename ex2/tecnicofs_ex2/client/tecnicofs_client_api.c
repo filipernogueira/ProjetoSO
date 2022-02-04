@@ -186,26 +186,26 @@ ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
         return -1;
     }
 
-    size_t num_bytes;
+    ssize_t num_bytes = 0;
 
-    if(read(rx, &num_bytes, sizeof(size_t)) == -1){
+    if(read(rx, &num_bytes, sizeof(ssize_t)) == -1){
         fprintf(stderr, "[ERR]: read failed: %s\n", strerror(errno));
         return -1;
     }
 
-    void *ret = malloc(sizeof(char) * num_bytes);
+    void *ret = malloc(sizeof(char) * (size_t)num_bytes);
 
     if(read(rx, ret, sizeof(int)) == -1){
         fprintf(stderr, "[ERR]: read failed: %s\n", strerror(errno));
         return -1;
     }
 
-    memcpy(buffer, ret, sizeof(char) * num_bytes);
+    memcpy(buffer, ret, sizeof(char) * (size_t)num_bytes);
 
     free(local_buffer);
     free(ret);
 
-    return (ssize_t)num_bytes;
+    return num_bytes;
 }
 
 int tfs_shutdown_after_all_closed() {

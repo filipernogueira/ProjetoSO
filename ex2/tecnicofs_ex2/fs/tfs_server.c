@@ -156,9 +156,9 @@ int server_open(){
 }
 
 int server_close(){
-    int buffer[2];
+    void *buffer = malloc(2 * sizeof(int));
 
-    if(read(rx, &buffer, sizeof(int) * 2) == -1){
+    if(read(rx, buffer, sizeof(int) * 2) == -1){
         fprintf(stderr, "[ERR]: read failed: %s\n", strerror(errno));
         return -1;
     }
@@ -179,6 +179,8 @@ int server_close(){
         fprintf(stderr, "[ERR]: write failed: %s\n", strerror(errno));
         return -1;
     }
+
+    free(buffer);
 
     return 0;
 }
@@ -203,7 +205,7 @@ int server_write(){
 
     memcpy(&session_id, local_buffer, sizeof(int));
     memcpy(&fhandle, local_buffer + sizeof(int), sizeof(int));
-    memcpy(buffer, local_buffer + sizeof(int) * 2, sizeof(char) * 40);
+    memcpy(buffer, local_buffer + sizeof(int) * 2, sizeof(char) * len);
     
 
     ssize_t ret = tfs_write(fhandle, buffer, len);
@@ -238,7 +240,7 @@ int server_read(){
     memcpy(&fhandle, buffer + sizeof(int), sizeof(int));
     memcpy(&len, buffer + 2 * sizeof(int), sizeof(size_t));
 
-    char data[len];
+    void *data = malloc(sizeof(char) * len);
 
     ssize_t num_bytes = tfs_read(fhandle, data, len);
 
@@ -252,12 +254,13 @@ int server_read(){
         return -1;
     }
 
-    if (write(session_ids[session_id], &data, sizeof(char) * len) == -1){
+    if (write(session_ids[session_id], data, sizeof(char) * len) == -1){
         fprintf(stderr, "[ERR]: write failed: %s\n", strerror(errno));
         return -1;
     }
 
     free(buffer);
+    free(data);
 
     return 0;
 }
